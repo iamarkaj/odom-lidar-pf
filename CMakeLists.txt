@@ -19,7 +19,6 @@ find_package(OpenCV)
 find_package(Eigen3 REQUIRED)
 
 catkin_package(
-  INCLUDE_DIRS include
   CATKIN_DEPENDS turtlebot3_gazebo turtlebot3_teleop
   DEPENDS GAZEBO 
 )
@@ -27,7 +26,6 @@ catkin_package(
 link_directories(${GAZEBO_LIBRARY_DIRS})
 
 include_directories(
-  include
   src
   ${catkin_INCLUDE_DIRS}
   ${GAZEBO_INCLUDE_DIRS}
@@ -45,14 +43,10 @@ set(tool_sources
   src/tool/tool.cpp
 )
 
-# set(vodom_sources
-#   src/vodom/vo_features.h
-# )
+add_executable(mcl_cpp src/mcl/mcl_node.cpp ${mcl_sources} ${tool_sources})
+add_dependencies(mcl_cpp ${mcl_cpp_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(mcl_cpp ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
 
-# add_executable(vodom src/vodom/mono_vo.cpp ${vodom_sources})
-# add_dependencies(vodom ${vodom_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-# target_link_libraries(vodom ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
-
-add_executable(mcl src/mcl/mcl_node.cpp ${mcl_sources} ${tool_sources})
-add_dependencies(mcl ${mcl_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(mcl ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
+catkin_install_python(PROGRAMS scripts/mcl_python.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)

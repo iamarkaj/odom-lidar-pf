@@ -1,4 +1,4 @@
-# INSTRUCTIONS
+# Sensor Fusion of 2D Lidar and Odometry using Particle Filter [C++ & Python]
 
 ### Install Turtlebot3
 
@@ -20,10 +20,24 @@ echo "export GAZEBO_MODEL_PATH=$GAZEBO_MODEL_PATH:~/catkin_ws/src/odom-lidar-pf/
 cd ~/catkin_ws && rosdep install --from-paths src --ignore-src && catkin_make
 ```
 
-### Run odom-lidar-pf
+### Start launch file
 
 ```
 roslaunch odom-lidar-pf turtlebot.launch
+```
+
+### Run PF node [Run either CPP OR Python]
+
+For CPP
+
+```
+rosrun odom-lidar-pf mcl_cpp
+```
+
+For Python
+
+```
+rosrun odom-lidar-pf mcl_python.py
 ```
 
 ### Run Turtlebot3 controller

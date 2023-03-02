@@ -27,8 +27,11 @@
         <param name="use_tf_static" value="false"/>
     </node>
 
-    <!--Particle Filter node  -->
-    <node pkg="odom-lidar-pf" name="mcl" type="mcl" args=""/>
+    <!--Particle Filter Python node  -->
+    <!-- <node pkg="odom-lidar-pf" name="mcl_python" type="mcl_python.py" output="screen"/> -->
+
+    <!--Particle Filter C++ node  -->
+    <!-- <node pkg="odom-lidar-pf" name="mcl_cpp" type="mcl_cpp" output="screen"/> -->
     
     <!-- RVIZ -->
     <node name="rviz_start" type="rviz" pkg="rviz" args="-d $(find odom-lidar-pf)/config/turtlebot.rviz"/>

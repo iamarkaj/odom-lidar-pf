@@ -76,7 +76,6 @@ private:
 
     vec_poses.push_back(eigenPose);
     vec_poses_time.push_back(msg->header.stamp.toSec());
-    check_data();
   }
 
 public:
@@ -89,7 +88,7 @@ public:
 
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv, "mcl");
+  ros::init(argc, argv, "mcl_cpp");
   ros::NodeHandle nh;
   MclNode mcl_node(nh);
   ros::spin();

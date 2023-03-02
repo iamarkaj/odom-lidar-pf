@@ -6,9 +6,7 @@ mcl::mcl()
 
   mcl::getMap(); // Get map from ROS
 
-  numOfParticle = 2500;       // Number of Particles.
-  minOdomDistance = 0.03;     // [m]
-  minOdomAngle = 10;          // [deg]
+  numOfParticle = 2500;       // Number of Particles
   repropagateCountNeeded = 1; // [num]
   odomCovariance[0] = 0.02;   // Rotation to Rotation
   odomCovariance[1] = 0.02;   // Translation to Rotation
@@ -17,11 +15,11 @@ mcl::mcl()
   odomCovariance[4] = 0.02;   // X
   odomCovariance[5] = 0.02;   // Y
 
-  tf_laser2robot << 1, 0, 0, 0.032,
-      0, 1, 0, 0,
-      0, 0, 1, -0.172,
-      0, 0, 0, 1;            // TF (laser frame to robot frame)
-  
+  tf_laser2robot << 1, 0, 0, 0,
+      0, -1, 0, 0,
+      0, 0, 1, 0,
+      0, 0, 0, 1; // TF (laser frame to robot frame)
+
   isOdomInitialized = false; // Will be true when first data incoming.
   predictionCounter = 0;
 
@@ -38,24 +36,26 @@ void mcl::getMap()
   nav_msgs::OccupancyGridConstPtr map_msg = ros::topic::waitForMessage<nav_msgs::OccupancyGrid>("/map", ros::Duration(10));
 
   // Set gridMap
-	gridMap.create(map_msg->info.height, map_msg->info.width, CV_8SC1);
+  gridMap.create(map_msg->info.height, map_msg->info.width, CV_8SC1);
   int i = 0;
-	for(int x=0; x < map_msg->info.height; x++) {
-		for(int y=0; y < map_msg->info.width; y++) {
+  for (int x = 0; x < map_msg->info.height; x++)
+  {
+    for (int y = 0; y < map_msg->info.width; y++)
+    {
       gridMap.at<signed char>(y, x) = (int)map_msg->data[i++];
     }
   }
-  
+
   // Set gridMapCV
   gridMap.convertTo(gridMapCV, CV_8UC1);
-  cv::Mat element = cv::getStructuringElement(cv::MORPH_RECT,cv::Size(3,3), cv::Point(1,1));
+  cv::Mat element = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3), cv::Point(1, 1));
   cv::dilate(gridMapCV, gridMapCV, element);
-  cv::GaussianBlur(gridMapCV, gridMapCV, cv::Size(3,3), 1.0);
-  
+  cv::GaussianBlur(gridMapCV, gridMapCV, cv::Size(3, 3), 1.0);
+
   // Set poseMap and particlesMap
   cv::threshold(gridMapCV, poseMap, 50, 255, cv::THRESH_BINARY_INV);
   cv::cvtColor(poseMap, poseMap, cv::COLOR_GRAY2BGR);
-  particlesMap = poseMap.clone(); 
+  particlesMap = poseMap.clone();
 
   mapCenterX = map_msg->info.origin.position.x + map_msg->info.width * map_msg->info.resolution / 2.0;
   mapCenterY = map_msg->info.origin.position.y + map_msg->info.height * map_msg->info.resolution / 2.0;
@@ -119,7 +119,6 @@ void mcl::prediction(Eigen::Matrix4f diffPose)
   float rot1_noise_coeff = odomCovariance[0] * fabs(delta_rot1) + odomCovariance[1] * fabs(delta_trans);
   float rot2_noise_coeff = odomCovariance[0] * fabs(delta_rot2) + odomCovariance[1] * fabs(delta_trans);
 
-  float scoreSum = 0;
   for (int i = 0; i < particles.size(); i++)
   {
     std::normal_distribution<float> gaussian_distribution(0, 1);
@@ -132,20 +131,11 @@ void mcl::prediction(Eigen::Matrix4f diffPose)
     float y = delta_trans * sin(delta_rot1) + gaussian_distribution(gen) * odomCovariance[5];
     float theta = delta_rot1 + delta_rot2 + gaussian_distribution(gen) * odomCovariance[0] * (M_PI / 180.0);
 
-    Eigen::Matrix4f diff_odom_w_noise = tool::xyzrpy2eigen(x, y, 0, 0, 0, theta);
+    Eigen::Matrix4f diff_odom_w_noise = tool::xyzrpy2eigen(x, y, 0, 0, 0, -theta);
     Eigen::Matrix4f pose_t_plus_1 = particles.at(i).pose * diff_odom_w_noise;
 
-    scoreSum = scoreSum + particles.at(i).score; // For normalization
     particles.at(i).pose = pose_t_plus_1;
   }
-
-  // normalize the score
-  for (int i = 0; i < particles.size(); i++)
-  {
-    particles.at(i).score = particles.at(i).score / scoreSum;
-  }
-
-  showInMap();
 }
 
 void mcl::weightning(Eigen::Matrix4Xf laser)
@@ -187,11 +177,11 @@ void mcl::weightning(Eigen::Matrix4Xf laser)
       else
       {
         float img_val = gridMapCV.at<signed char>(ptY, ptX) / 100.0; // calculate the score
-        calcedWeight += img_val; // sum up the score
+        calcedWeight += img_val;                                     // sum up the score
       }
     }
     // Adding score to particle.
-    particles.at(i).score = particles.at(i).score + (calcedWeight / transLaser.cols());
+    particles.at(i).score = particles.at(i).score + calcedWeight;
 
     scoreSum += particles.at(i).score;
 
@@ -217,6 +207,7 @@ void mcl::resampling()
   std::vector<float> particleScores;
   std::vector<particle> particleSampled;
   float scoreBaseline = 0;
+
   for (int i = 0; i < particles.size(); i++)
   {
     scoreBaseline += particles.at(i).score;
@@ -232,7 +223,7 @@ void mcl::resampling()
 
     // put selected particle to array 'particleSampled' with score reset
     particle selectedParticle = particles.at(particleIndex);
-
+    selectedParticle.score = 1.0 / numOfParticle;
     particleSampled.push_back(selectedParticle);
   }
   particles = particleSampled;
@@ -264,10 +255,6 @@ void mcl::showInMap()
     //          gridMap.rows , gridMap.cols (size of image)
     //          mapCenterX, mapCenterY (center of map's position)
     // Output : xPos, yPos (pose in pixel value)
-
-    // Original
-    //  int xPos = static_cast<int>((maxProbParticle.pose(0, 3) - mapCenterX + (gridMapCV.cols*imageResolution)/2)/imageResolution);
-    //  int yPos = static_cast<int>((maxProbParticle.pose(1, 3) - mapCenterY + (gridMapCV.rows*imageResolution)/2)/imageResolution);
 
     // Estimate position using all particles
     float x_all = 0;
@@ -332,28 +319,17 @@ void mcl::updateData(Eigen::Matrix4f pose, Eigen::Matrix4Xf laser)
     return;
   }
 
-  // When difference of odom from last correction is over some threshold, do correction
-
   // Calculate difference of distance and angle.
   Eigen::Matrix4f diffOdom = odomBefore.inverse() * pose;
-  Eigen::VectorXf diffxyzrpy = tool::eigen2xyzrpy(diffOdom); // {x,y,z,roll,pitch,yaw}
-  float diffDistance = sqrt(pow(diffxyzrpy[0], 2) + pow(diffxyzrpy[1], 2));
-  float diffAngle = fabs(diffxyzrpy[5]) * 180.0 / 3.141592;
 
-  if (diffDistance > minOdomDistance || diffAngle > minOdomAngle && diffAngle < 28.0)
+  prediction(diffOdom);
+  weightning(laser);
+  predictionCounter++;
+  if (predictionCounter == repropagateCountNeeded)
   {
-    // Doing correction & prediction
-    prediction(diffOdom);
-
-    weightning(laser);
-
-    predictionCounter++;
-    if (predictionCounter == repropagateCountNeeded)
-    {
-      resampling();
-      predictionCounter = 0;
-    }
-
-    odomBefore = pose;
+    resampling();
+    predictionCounter = 0;
   }
+  showInMap();
+  odomBefore = pose;
 }
