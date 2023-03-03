@@ -156,7 +156,7 @@ void mcl::weightning(Eigen::Matrix4Xf laser)
     //         tf_laser2robot (4 x 4 matrix of transformatino between robot and sensor)
     // Output : transLaser (4 x N matrix of laser points in global frame)
 
-    Eigen::Matrix4Xf transLaser = particles.at(i).pose * tf_laser2robot * laser; // now this is lidar sensor's frame.
+    Eigen::Matrix4Xf transLaser = particles.at(i).pose * tf_laser2robot * laser; // now this is lidar sensor's frame
 
     float calcedWeight = 0;
 
@@ -176,12 +176,12 @@ void mcl::weightning(Eigen::Matrix4Xf laser)
         continue; // dismiss if the laser point is at the outside of the map
       else
       {
-        float img_val = gridMapCV.at<signed char>(ptY, ptX) / 100.0; // calculate the score
+        float img_val = gridMapCV.at<uchar>(ptY, ptX) / 100.0; // calculate the score
         calcedWeight += img_val;                                     // sum up the score
       }
     }
     // Adding score to particle.
-    particles.at(i).score = particles.at(i).score + calcedWeight;
+    particles.at(i).score = particles.at(i).score + (calcedWeight / transLaser.cols());
 
     scoreSum += particles.at(i).score;
 
@@ -277,9 +277,6 @@ void mcl::showInMap()
     // Output : transLaser (4 x N matrix of laser points in global frame)
 
     Eigen::Matrix4Xf transLaser = maxProbParticle.pose * tf_laser2robot * maxProbParticle.scan;
-
-    //--------------------------------------------------------//
-
     for (int i = 0; i < transLaser.cols(); i++)
     {
       // TODO :  translate each laser point (in [m]) to pixel frame.  (transLaser(0,i) 's unit is [m]) (You will use it in MCL too! remember!)
@@ -292,16 +289,14 @@ void mcl::showInMap()
       int xPos = static_cast<int>((transLaser(0, i) - mapCenterX + (gridMapCV.cols * imageResolution) / 2) / imageResolution);
       int yPos = static_cast<int>((transLaser(1, i) - mapCenterY + (gridMapCV.rows * imageResolution) / 2) / imageResolution);
 
-      //--------------------------------------------------------//
-
       cv::circle(showMap, cv::Point(xPos, yPos), 1, cv::Scalar(0, 255, 255), -1);
     }
   }
 
   // Modify maps for better display
   float SET_MAP_SIZE = 400.0;
-  cv::Mat showMapCropped = showMap(cv::Range(1900, 2100), cv::Range(1900, 2100));
-  cv::Mat poseMapCropped = poseMap(cv::Range(1900, 2100), cv::Range(1900, 2100));
+  cv::Mat showMapCropped = showMap.clone();
+  cv::Mat poseMapCropped = poseMap.clone();
   cv::resize(showMapCropped, showMapCropped, cv::Size(SET_MAP_SIZE, SET_MAP_SIZE), cv::INTER_LINEAR);
   cv::resize(poseMapCropped, poseMapCropped, cv::Size(SET_MAP_SIZE, SET_MAP_SIZE), cv::INTER_LINEAR);
 
