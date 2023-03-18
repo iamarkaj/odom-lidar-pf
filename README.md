@@ -18,6 +18,7 @@ cd ~/catkin_ws/src/
 git clone https://github.com/iamarkaj/odom-lidar-pf.git
 echo "export GAZEBO_MODEL_PATH=$GAZEBO_MODEL_PATH:~/catkin_ws/src/odom-lidar-pf/models" >> ~/.bashrc
 cd ~/catkin_ws && rosdep install --from-paths src --ignore-src && catkin_make
+source ~/catkin_ws/devel/setup.bash
 ```
 
 ### Start launch file
