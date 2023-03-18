@@ -40,6 +40,14 @@ For Python
 rosrun odom-lidar-pf mcl_python.py
 ```
 
+### Run GPF node 
+
+For CPP
+
+```
+rosrun odom-lidar-pf gpf_cpp
+```
+
 ### Run Turtlebot3 controller
 
 ```

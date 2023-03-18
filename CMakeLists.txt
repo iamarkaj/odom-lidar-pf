@@ -33,19 +33,40 @@ include_directories(
   ${Eigen_INCLUDE_DIRS}
 )
 
-set(mcl_sources
-  src/mcl/mcl.h
-  src/mcl/mcl.cpp
-)
-
 set(tool_sources
   src/tool/tool.h
   src/tool/tool.cpp
 )
 
+##########################
+# CPP MCL
+##########################
+
+set(mcl_sources
+  src/mcl/mcl.h
+  src/mcl/mcl.cpp
+)
+
 add_executable(mcl_cpp src/mcl/mcl_node.cpp ${mcl_sources} ${tool_sources})
 add_dependencies(mcl_cpp ${mcl_cpp_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(mcl_cpp ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
+
+##########################
+# CPP GPF
+##########################
+
+set(gpf_sources
+  src/gpf/gpf.h
+  src/gpf/gpf.cpp
+)
+
+add_executable(gpf_cpp src/gpf/gpf_node.cpp ${gpf_sources} ${tool_sources})
+add_dependencies(gpf_cpp ${gpf_cpp_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(gpf_cpp ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
+
+##########################
+# PYTHON MCL
+##########################
 
 catkin_install_python(PROGRAMS scripts/mcl_python.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
